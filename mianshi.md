@@ -280,121 +280,122 @@
 ### 1.有一个jsonline格式的文件file.txt大小约为10K
 ```python
 def get_lines():
-    with open('file.txt','rb') as f:
+    with open('file.txt','r+') as f :
         return f.readlines()
 
-if __name__ == '__main__':
-    for e in get_lines():
-        process(e) # 处理每一行数据
-```
-现在要处理一个大小为10G的文件，但是内存只有4G，如果在只修改get_lines 函数而其他代码保持不变的情况下，应该如何实现？需要考虑的问题都有那些？
-```python
-def get_lines():
-    with open('file.txt','rb') as f:
+    # 现在要处理一个大小为10G的文件，但是内存只有4G，如果在只修改get_lines 函数而其他代码保持不变的情况下，应该如何实现？
+def get_lines1():
+    """
+    在处理一些文本的时候感觉更加便利，按行读更容易对文本进行处理，但读取次数比较多
+    """
+    with open('file.txt', 'r+') as f:
         for i in f:
             yield i
-```
-个人认为：还是设置下每次返回的行数较好，否则读取次数太多。
-```python
-def get_lines():
-    l = []
-    with open('file.txt','rb') as f:
-      data = f.readlines(60000)
-    l.append(data)
-    yield l
-```
-Pandaaaa906提供的方法
-```python
-from mmap import mmap
 
-
-def get_lines(fp):
-    with open(fp,"r+") as f:
-        m = mmap(f.fileno(), 0)
-        tmp = 0
-        for i, char in enumerate(m):
-            if char==b"\n":
-                yield m[tmp:i+1].decode()
-                tmp = i+1
-
-if __name__=="__main__":
-    for i in get_lines("fp_some_huge_file"):
-        print(i)
+def get_lines2(file_name,mode,encoding):
+    """
+    可以灵活控制每一次读取的SIZE，在速度上更有优势，适用于一些大的二进制文件，比如读取一些大的视频或图片等
+    """
+    with open(file_name, mode,encoding=encoding) as f:
+        while True:
+            part = f.read(10)
+            if part:
+                yield part
+            else:
+                return None
 ```
-要考虑的问题有：内存只有4G无法一次性读入10G文件，需要分批读入分批读入数据要记录每次读入数据的位置。分批每次读取数据的大小，太小会在读取操作花费过多时间。
+
 https://stackoverflow.com/questions/30294146/python-fastest-way-to-process-large-file
 
 ###  2.补充缺失的代码
 ```python
-def print_directory_contents(sPath):
-"""
-这个函数接收文件夹的名称作为输入参数
-返回该文件夹中文件的路径
-以及其包含文件夹中文件的路径
-"""
-import os
-for s_child in os.listdir(s_path):
-    s_child_path = os.path.join(s_path, s_child)
-    if os.path.isdir(s_child_path):
-        print_directory_contents(s_child_path)
-    else:
-        print(s_child_path)
+def print_directory_contents(s_path):
+    """
+    这个函数接收文件夹的名称作为输入参数
+    返回该文件夹中文件的路径
+    以及其包含文件夹中文件的路径
+    """
+    import os
+    for s_child in os.listdir(s_path):
+        s_child_path = os.path.join(s_path, s_child)
+        if os.path.isdir(s_child_path):
+            print_directory_contents(s_child_path)
+        else:
+            print(s_child_path)
+# print_directory_contents('venv')
 ```
 ## 模块与包
 ### 3.输入日期， 判断这一天是这一年的第几天？
 ```python
 import datetime
 def dayofyear():
-    year = input("请输入年份: ")
-    month = input("请输入月份: ")
-    day = input("请输入天: ")
+    year = input('请输入年份：')
+    month = input('请输入月份：')
+    day = input('请输入天：')
     date1 = datetime.date(year=int(year),month=int(month),day=int(day))
     date2 = datetime.date(year=int(year),month=1,day=1)
     return (date1-date2).days+1
+def day_of_year():
+    year =input('请输入年份：')
+    month =input('请输入月份：')
+    day =input('请输入天：')
+    day1 = datetime.date(year=int(year),month=int(month),day=int(day))
+    day2 = datetime.date(year=int(year),month=1,day=1)
+    return (day1-day2).days+1
+
 ```
 ### 4.打乱一个排好序的list对象alist？
 ```python
 import random
 alist = [1,2,3,4,5]
 random.shuffle(alist)
-print(alist)
 ```
 ## 数据类型
 ### 5.现有字典 d= {'a':24,'g':52,'i':12,'k':33}请按value值进行排序?
 ```python
-sorted(d.items(),key=lambda x:x[1])
+d= {'z':24,'g':52,'i':12,'k':33}
+d=sorted(d.items(),key=lambda x:x[1])
+dict = {key:value for key,value in d}
+print(dict)、
 ```
-    x[0]代表用key进行排序；x[1]代表用value进行排序。
 ### 6.字典推导式
 ```python
-d = {key:value for (key,value) in iterable}
+dict1={key:value for key,value in d} # d应该是一个iterable可迭代对象
 ```
 ### 7.请反转字符串 "aStr"?
 ```python
-print("aStr"[::-1])
+print('astr'[::-1])
 ```
 ### 8.将字符串 "k:1 |k1:2|k2:3|k3:4"，处理成字典 {k:1,k1:2,...}
 ```python
-str1 = "k:1|k1:2|k2:3|k3:4"
+str1='k:1|k1:2|k2:3|k3:4'
 def str2dict(str1):
-    dict1 = {}
-    for iterms in str1.split('|'):
-        key,value = iterms.split(':')
-        dict1[key] = value
-    return dict1
-#字典推导式
-d = {k:int(v) for t in str1.split("|") for k, v in (t.split(":"), )}
+    dict={}
+    for item in str1.split('|'):
+        key,value = item.split(':')
+        dict[key]=int(value)
+    return dict
+print(str2dict(str1))
+dict ={key:int(value) for item in str1.split('|') for key,value in (item.split(':'),)}
+print(dict)
 ```
 ### 9.请按alist中元素的age由大到小排序
 ```python
 alist = [{'name':'a','age':20},{'name':'b','age':30},{'name':'c','age':25}]
-def sort_by_age(list1):
-    return sorted(alist,key=lambda x:x['age'],reverse=True)
+def sort_by_age(list):
+    return sorted(list,key=lambda x:x['age'],reverse=True)
+print(sort_by_age(alist))
 ```
 ### 10.下面代码的输出结果将是什么？
 ```python
-list = ['a','b','c','d','e']
-print(list[10:])
+list1 = ['a','b','c','d','e']
+"""
+代码将输出[],不会产生IndexError错误，就像所期望的那样，尝试用超出成员的个数的index来获取某个列表的成员。
+例如，尝试获取list[10]和之后的成员，会导致IndexError。然而，尝试获取列表的切片，
+开始的index超过了成员个数不会产生IndexError，而是仅仅返回一个空列表。
+这成为特别让人恶心的疑难杂症，因为运行的时候没有错误产生，导致Bug很难被追踪到。
+"""
+print(list1[10:])
 ```
 代码将输出[],不会产生IndexError错误，就像所期望的那样，尝试用超出成员的个数的index来获取某个列表的成员。例如，尝试获取list[10]和之后的成员，会导致IndexError。然而，尝试获取列表的切片，开始的index超过了成员个数不会产生IndexError，而是仅仅返回一个空列表。这成为特别让人恶心的疑难杂症，因为运行的时候没有错误产生，导致Bug很难被追踪到。
 ### 11.写一个列表生成式，产生一个公差为11的等差数列
@@ -412,31 +413,15 @@ print(set1 ^ set2)
 ```
 ### 13.请写出一段python代码实现删除list里面的重复元素？
 ```python
-l1 = ['b','c','d','c','a','a']
-l2 = list(set(l1))
-print(l2)
-```
-用list类的sort方法:
-```python
-l1 = ['b','c','d','c','a','a']
-l2 = list(set(l1))
-l2.sort(key=l1.index)
-print(l2)
-```
-也可以这样写:
-```python
-l1 = ['b','c','d','c','a','a']
-l2 = sorted(set(l1),key=l1.index)
-print(l2)
-```
-也可以用遍历：
-```python
-l1 = ['b','c','d','c','a','a']
-l2 = []
-for i in l1:
-    if not i in l2:
-        l2.append(i)
-print(l2)
+list1 =['b','c','d','c','a','a']
+list2 = list(set(list1)) # 方法1
+list2.sort(key=list1.index) # 方法2 list.index 从列表中找出某个值第一个匹配项的索引位置
+list2 = sorted(set(list1),key=list1.index) # 方法3
+list2 = []
+for i in list1:
+    if i not in list2:
+        list2.append(i)
+print(list2)
 ```
 ### 14.给定两个list A，B ,请用找出A，B中相同与不同的元素
 ```python
@@ -470,60 +455,50 @@ d. Python3 中没有 long，只有无限精度的 int
 第一种方法:使用装饰器
 ```python
 def singleton(cls):
-    instances = {}
-    def wrapper(*args, **kwargs):
+    instances={}
+    def wrapper(*args,**kwargs):
         if cls not in instances:
-            instances[cls] = cls(*args, **kwargs)
+            instances[cls]=cls(*args,**kwargs)
         return instances[cls]
     return wrapper
-    
-    
+
 @singleton
-class Foo(object):
+class foo(object):
     pass
-foo1 = Foo()
-foo2 = Foo()
-print(foo1 is foo2)  # True
+foo1 = foo()
+foo2 = foo()
+print(foo1 is foo2)
 ```
 第二种方法：使用基类
 New 是真正创建实例对象的方法，所以重写基类的new 方法，以此保证创建对象的时候只生成一个实例
+
 ```python
 class Singleton(object):
     def __new__(cls, *args, **kwargs):
-        if not hasattr(cls, '_instance'):
-            cls._instance = super(Singleton, cls).__new__(cls, *args, **kwargs)
+        if not hasattr(cls,'_instance'):
+            cls._instance = super(Singleton,cls).__new__(cls,*args,**kwargs)
         return cls._instance
-    
-    
+
 class Foo(Singleton):
     pass
-
 foo1 = Foo()
 foo2 = Foo()
-
-print(foo1 is foo2)  # True
+print(foo1 is foo2)
 ```
 第三种方法：元类，元类是用于创建类对象的类，类对象创建实例对象时一定要调用call方法，因此在调用call时候保证始终只创建一个实例即可，type是python的元类
 ```python
-class Singleton(type):
+class Singleton1(type):
     def __call__(cls, *args, **kwargs):
-        if not hasattr(cls, '_instance'):
-            cls._instance = super(Singleton, cls).__call__(*args, **kwargs)
+        if not hasattr(cls,'_instance'):
+            cls._instance = super(Singleton1,cls).__call__(*args,**kwargs)
         return cls._instance
 
-
-# Python2
-class Foo(object):
-    __metaclass__ = Singleton
-
-# Python3
-class Foo(metaclass=Singleton):
+class foo(metaclass=Singleton1):
     pass
 
 foo1 = Foo()
 foo2 = Foo()
-print(foo1 is foo2)  # True
-
+print(foo1 is foo2)
 ```
 ### 18.反转一个整数，例如-123 --> -321 
 ```python
@@ -532,68 +507,61 @@ class Solution(object):
         if -10<x<10:
             return x
         str_x = str(x)
-        if str_x[0] !="-":
+        if str_x[0] != '-':
             str_x = str_x[::-1]
             x = int(str_x)
         else:
             str_x = str_x[1:][::-1]
             x = int(str_x)
             x = -x
-        return x if -2147483648<x<2147483647 else 0
-if __name__ == '__main__':
-    s = Solution()
-    reverse_int = s.reverse(-120)
-    print(reverse_int)
+        return x
+s = Solution()
+reverse = s.reverse(-1234)
+print(reverse)
 ```
 ### 19.设计实现遍历目录与子目录，抓取.pyc文件
 第一种方法：
 ```python
 import os
-
+"""
+方法一
+"""
 def get_files(dir,suffix):
     res = []
     for root,dirs,files in os.walk(dir):
         for filename in files:
             name,suf = os.path.splitext(filename)
             if suf == suffix:
+                # print(os.path.join(root,filename))
                 res.append(os.path.join(root,filename))
-
     print(res)
 
-get_files("./",'.pyc')
-```
-第二种方法：
-```python
-import os
-
+"""
+方法二
+"""
 def pick(obj):
-    if obj.endswith(".pyc"):
+    if obj.endswith('.py'):
         print(obj)
-    
-def scan_path(ph):
-    file_list = os.listdir(ph)
-    for obj in file_list:
-        if os.path.isfile(obj):
-            pick(obj)
-        elif os.path.isdir(obj):
-            scan_path(obj)
-    
-if __name__=='__main__':
-    path = input('输入目录')
-    scan_path(path)
-```
-第三种方法
-```python
+
+def scan_path(path):
+    for obj in os.listdir(path):
+        obj_path = os.path.join(path,obj)
+        if os.path.isdir(obj_path):
+            scan_path(obj_path)
+        elif os.path.isfile(obj_path):
+            pick(obj_path)
+        # print(os.path.join(path,obj))
+# scan_path('venv')
+# get_files('venv','.py')
+
+"""
+方法三
+"""
 from glob import iglob
-
-
-def func(fp, postfix):
-    for i in iglob(f"{fp}/**/*{postfix}", recursive=True):
+def func(path,suf):
+    for i in iglob(f'{path}/**/*{suf}',recursive=True):
         print(i)
-
-if __name__ == "__main__":
-    postfix = ".pyc"
-    func("K:\Python_script", postfix)
+func('/home/moluo/PycharmProjects/pythonProject/venv','.py')
 ```
 ### 20.一行代码实现1-100之和
 ```python
@@ -1608,68 +1576,68 @@ class MyCls(object):
 
 ### 95.a = “abbbccc”，用正则匹配为abccc,不管有多少b，就出现一次？
     思路：不管有多少个b替换成一个
-
+    
     re.sub(r'b+', 'b', a)
 ### 96.Python字符串查找和替换？
     a、str.find()：正序字符串查找函数
     函数原型：
     str.find(substr [,pos_start [,pos_end ] ] )
     返回str中第一次出现的substr的第一个字母的标号，如果str中没有substr则返回-1，也就是说从左边算起的第一次出现的substr的首字母标号。
-
+    
     参数说明：
     str：代表原字符串
     substr：代表要查找的字符串
     pos_start：代表查找的开始位置，默认是从下标0开始查找
     pos_end：代表查找的结束位置
-
+    
     例子：
     'aabbcc.find('bb')' # 2
-
+    
     b、str.index()：正序字符串查找函数
     index()函数类似于find()函数，在Python中也是在字符串中查找子串第一次出现的位置，跟find()不同的是，未找到则抛出异常。
-
+    
     函数原型：
     str.index(substr [, pos_start, [ pos_end ] ] )
-
+    
     参数说明：
     str：代表原字符串
     substr：代表要查找的字符串
     pos_start：代表查找的开始位置，默认是从下标0开始查找
     pos_end：代表查找的结束位置
-
+    
     例子：
     'acdd l1 23'.index(' ') # 4
-
+    
     c、str.rfind()：倒序字符串查找函数
-
+    
     函数原型：
     str.rfind( substr [, pos_start [,pos_ end ] ])
     返回str中最后出现的substr的第一个字母的标号，如果str中没有substr则返回-1，也就是说从右边算起的第一次出现的substr的首字母标号。
-
+    
     参数说明：
     str：代表原字符串
     substr：代表要查找的字符串
     pos_start：代表查找的开始位置，默认是从下标0开始查找
     pos_end：代表查找的结束位置
-
+    
     例子：
     'adsfddf'.rfind('d') # 5
-
+    
     d、str.rindex()：倒序字符串查找函数
     rindex()函数类似于rfind()函数，在Python中也是在字符串中倒序查找子串最后一次出现的位置，跟rfind()不同的是，未找到则抛出异常。
-
+    
     函数原型：
     str.rindex(substr [, pos_start, [ pos_end ] ] )
-
+    
     参数说明：
     str：代表原字符串
     substr：代表要查找的字符串
     pos_start：代表查找的开始位置，默认是从下标0开始查找
     pos_end：代表查找的结束位置
-
+    
     例子：
      'adsfddf'.rindex('d') # 5
-
+    
     e、使用re模块进行查找和替换：
 函数 | 说明
 ---|---
@@ -1679,13 +1647,13 @@ re.sub(pat,newpat,s) | re.sub(pat,newpat,s)	对字符串中s的包含的所有�
 
     f、使用replace()进行替换：
     基本用法：对象.replace(rgExp,replaceText,max)
-
+    
     其中，rgExp和replaceText是必须要有的，max是可选的参数，可以不加。
     rgExp是指正则表达式模式或可用标志的正则表达式对象，也可以是 String 对象或文字；
     replaceText是一个String 对象或字符串文字；
     max是一个数字。
     对于一个对象，在对象的每个rgExp都替换成replaceText，从左到右最多max次。
-
+    
     s1='hello world'
     s1.replace('world','liming')
 
@@ -1693,7 +1661,7 @@ re.sub(pat,newpat,s) | re.sub(pat,newpat,s)	对字符串中s的包含的所有�
     第一个代表贪心匹配，第二个代表非贪心；
     ?在一般正则表达式里的语法是指的"零次或一次匹配左边的字符或表达式"相当于{0,1}
     而当?后缀于*,+,?,{n},{n,},{n,m}之后，则代表非贪心匹配模式，也就是说，尽可能少的匹配左边的字符或表达式，这里是尽可能少的匹配.(任意字符)
-
+    
     所以：第一种写法是，尽可能多的匹配，就是匹配到的字符串尽量长，第二中写法是尽可能少的匹配，就是匹配到的字符串尽量短。
     比如<tag>tag>tag>end，第一个会匹配<tag>tag>tag>,第二个会匹配<tag>。
 ### 98.正则表达式贪婪与非贪婪模式的区别？
@@ -1701,12 +1669,12 @@ re.sub(pat,newpat,s) | re.sub(pat,newpat,s)	对字符串中s的包含的所有�
     定义：正则表达式去匹配时，会尽量多的匹配符合条件的内容
     标识符：+，?，*，{n}，{n,}，{n,m}
     匹配时，如果遇到上述标识符，代表是贪婪匹配，会尽可能多的去匹配内容
-
+    
     非贪婪模式：
     定义：正则表达式去匹配时，会尽量少的匹配符合条件的内容 也就是说，一旦发现匹配符合要求，立马就匹配成功，而不会继续匹配下去(除非有g，开启下一组匹配)
     标识符：+?，??，*?，{n}?，{n,}?，{n,m}?
     可以看到，非贪婪模式的标识符很有规律，就是贪婪模式的标识符后面加上一个?
-
+    
     参考文章：https://dailc.github.io/2017/07/06/regularExpressionGreedyAndLazy.html
 
 ### 99.写出开头匹配字母和下划线，末尾是数字的正则表达式？
